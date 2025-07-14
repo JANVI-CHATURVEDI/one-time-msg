@@ -52,7 +52,8 @@ function ViewSecret() {
     if (!expiryTime) return;
 
     const interval = setInterval(() => {
-      const remaining = expiryTime - Date.now();
+      const remaining = new Date(expiryTime).getTime() - Date.now();
+
 
       if (remaining <= 0) { // time is up
         setTimeLeft(null);

@@ -44,7 +44,8 @@ function SecretForm() {
                 }
             );
 
-            setLink(`${window.location.origin}/secret/${token}`);
+            setLink(`${window.location.origin}/view/${token}`);
+
             setText('');
             setImage(null);
             setExpiry('');
