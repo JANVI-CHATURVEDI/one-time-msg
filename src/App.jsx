@@ -7,7 +7,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/secret/:token" element={<ViewSecret />} />
+        <Route path="/view/:token" element={<ViewSecret />} />
+
       </Routes>
     </BrowserRouter>
   );
