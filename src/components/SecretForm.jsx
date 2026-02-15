@@ -39,6 +39,8 @@ function SecretForm() {
                     messageId: ID.unique(),
                     token,
                     text: text || null,
+                    senderId: 'anonymous',
+                    receiverId: 'anyone',
                     imageUrl,
                     isRead: false,
                     expiry: expiryTime, // appwrite stored expiry time in milliseconds
