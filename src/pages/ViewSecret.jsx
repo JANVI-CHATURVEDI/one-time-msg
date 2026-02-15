@@ -7,9 +7,8 @@ function ViewSecret() {
   const { token } = useParams(); // get token from the URL
   const [secret, setSecret] = useState(null); // to store secret data
   const [status, setStatus] = useState('loading'); // loading | error | revealed | expired
-  const [expiryTime, setExpiryTime] = useState(null); // when secret will expire , stores expiry time in milliseconds
-  const [timeLeft, setTimeLeft] = useState(null); // how much time is left (countdown)
-
+  const [expiryTime, setExpiryTime] = useState(null); // expiry timestamp in milliseconds
+  const [timeLeft, setTimeLeft] = useState(null); // countdown timer
 
   const dbID = '699165e1000f47988d38';
   const collectionID = 'messages';
@@ -18,27 +17,25 @@ function ViewSecret() {
     const fetchSecret = async () => {
       try {
         const res = await databases.listDocuments(dbID, collectionID, [
-          Query.equal("messageId", token) // it matches the token in appwrite  database
-        ]);  // now res has all data stored in appwrite  which token matches the url token 
+          Query.equal("messageId", token)
+        ]);
 
         if (res.documents.length === 0) {
-          setStatus('error');    // there is no such message 
+          setStatus('error'); // no secret found
           return;
         }
 
-        const doc = res.documents[0];  // we get the data stored in appwrite
+        const doc = res.documents[0];
 
-        if (doc.expiry && Date.now() > new Date(doc.expiry).getTime()) {   // when time expires delete the msg
+        if (doc.expiry && Date.now() > new Date(doc.expiry).getTime()) {
           await databases.deleteDocument(dbID, collectionID, doc.$id);
           setStatus('expired');
           return;
         }
-         
-        // we fetch the data stored in appwrite to show
-        // till the time is not expired and data is not deleted
-        setSecret(doc); // we put data in secret
-        setStatus('revealed'); // reveal the secret
-        setExpiryTime(doc.expiry); // set the expiry time from the expiry time stored in appwrite
+
+        setSecret(doc);
+        setStatus('revealed');
+        setExpiryTime(doc.expiry);
       } catch (err) {
         console.error(err);
         setStatus('error');
@@ -46,7 +43,7 @@ function ViewSecret() {
     };
 
     fetchSecret();
-  }, [token]);   //  fetchSecret() gets called again — to fetch the new message for the new token.
+  }, [token]);
 
   useEffect(() => {
     if (!expiryTime) return;
@@ -54,23 +51,22 @@ function ViewSecret() {
     const interval = setInterval(() => {
       const remaining = new Date(expiryTime).getTime() - Date.now();
 
-
-      if (remaining <= 0) { // time is up
+      if (remaining <= 0) {
         setTimeLeft(null);
         setStatus('expired');
-        clearInterval(interval); // stop the setInterval
-        if (secret?.$id) {  // if secret is there , delete it
+        clearInterval(interval);
+        if (secret?.$id) {
           databases.deleteDocument(dbID, collectionID, secret.$id).catch(console.warn);
         }
       } else {
-        setTimeLeft(remaining); // if time is not up, set the remaining time
+        setTimeLeft(remaining);
       }
     }, 1000);
 
-    return () => clearInterval(interval);  // Before you rerun or destroy this effect, please clean up the previous timer.
+    return () => clearInterval(interval);
   }, [expiryTime, secret]);
 
-  const formatTime = (ms) => {              // convert milliseconds to minutes and seconds
+  const formatTime = (ms) => {
     const minutes = String(Math.floor(ms / 60000)).padStart(2, '0');
     const seconds = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0');
     return `${minutes}:${seconds}`;
@@ -80,22 +76,25 @@ function ViewSecret() {
   if (status === 'error') return <div className="p-6 text-center text-red-500">❌ Secret not found.</div>;
   if (status === 'expired') return <div className="p-6 text-center text-yellow-500">⚠️ This secret has expired.</div>;
 
+  // Parse JSON from content
+  const parsedContent = secret.content ? JSON.parse(secret.content) : {};
+
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-blue-400 to-whitepx-4 py-10">
+    <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-blue-400 to-white px-4 py-10">
       <div className="bg-white/30 backdrop-blur-md border border-white/50 shadow-xl rounded-xl p-6 max-w-xl w-full animate-fade-in space-y-4">
         <h2 className="text-2xl font-bold text-center text-gray-800 flex items-center justify-center gap-2">
           🔐 One-Time Message
         </h2>
 
-        {secret.text && (
+        {parsedContent.text && (
           <p className="text-base text-gray-800 whitespace-pre-wrap p-3 rounded bg-white/80 shadow-inner max-h-60 overflow-auto border">
-            {secret.content}
+            {parsedContent.text}
           </p>
         )}
 
-        {secret.imageUrl && (
+        {parsedContent.image && (
           <img
-            src={secret.imageUrl}
+            src={parsedContent.image}
             alt="secret"
             className="rounded-md shadow-lg border max-h-96 mx-auto"
           />
@@ -106,8 +105,6 @@ function ViewSecret() {
             ⏳ This message will expire in <span className="font-semibold">{formatTime(timeLeft)}</span>
           </div>
         )}
-
-
       </div>
     </div>
   );
