@@ -24,7 +24,7 @@ function SecretForm() {
 
             // 1. If image is uploaded, upload it to Appwrite Storage
             if (image) {
-                const file = await storage.createFile('687343ce0011224acaf8', ID.unique(), image);
+                const file = await storage.createFile('699164f0003b00cdf52e', ID.unique(), image);
 
                 imageUrl = `https://cloud.appwrite.io/v1/storage/buckets/687343ce0011224acaf8/files/${file.$id}/view?project=${import.meta.env.VITE_APPWRITE_PROJECT_ID}`;
 
