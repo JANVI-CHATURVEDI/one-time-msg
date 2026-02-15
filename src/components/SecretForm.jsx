@@ -30,18 +30,23 @@ function SecretForm() {
             }
 
             // Create document in Appwrite (only with existing table columns)
-            await databases.createDocument(
-                '699165e1000f47988d38', // Database ID
-                'messages',             // Table ID
-                ID.unique(),            // Row ID
-                {
-                    messageId: token,
-                    content: text || (uploadedImageUrl ? '[Image]' : null), // placeholder if only image
-                    senderId: 'anonymous',
-                    receiverId: 'anyone',
-                    isRead: false,
-                    timestamp: new Date().toISOString()
-                }
+           const dataToStore = JSON.stringify({
+                        text: text || null,
+                        image: uploadedImageUrl || null
+           });
+
+           await databases.createDocument(
+                  '699165e1000f47988d38', // your DB ID
+                  'messages',             // your collection ID
+                  ID.unique(),            // document ID
+                  {
+                     messageId: token,
+                     content: dataToStore,  // store both text & image as JSON
+                     senderId: 'anonymous',
+                     receiverId: 'anyone',
+                     isRead: false,
+                     timestamp: new Date().toISOString()
+                   }
             );
 
             // Build one-time link including image & expiry in frontend
