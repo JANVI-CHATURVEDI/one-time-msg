@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { databases } from '../appwrite/config';
 import { Query } from 'appwrite';
 
 function ViewSecret() {
-  const { token } = useParams(); // get token from the URL
-  const [secret, setSecret] = useState(null); // to store secret data
-  const [status, setStatus] = useState('loading'); // loading | error | revealed | expired
-  const [expiryTime, setExpiryTime] = useState(null); // expiry timestamp in milliseconds
-  const [timeLeft, setTimeLeft] = useState(null); // countdown timer
+  const { token } = useParams(); // token from URL
+  const location = useLocation();
+  const [secret, setSecret] = useState(null);
+  const [status, setStatus] = useState('loading'); // loading | revealed | expired | error
+  const [timeLeft, setTimeLeft] = useState(null); // countdown timer in ms
 
   const dbID = '699165e1000f47988d38';
   const collectionID = 'messages';
+
+  // Read expiry from URL query param
+  const searchParams = new URLSearchParams(location.search);
+  const expiryMinutes = searchParams.get('expiry'); // in minutes, or null
 
   useEffect(() => {
     const fetchSecret = async () => {
@@ -26,16 +30,14 @@ function ViewSecret() {
         }
 
         const doc = res.documents[0];
-
-        if (doc.expiry && Date.now() > new Date(doc.expiry).getTime()) {
-          await databases.deleteDocument(dbID, collectionID, doc.$id);
-          setStatus('expired');
-          return;
-        }
-
         setSecret(doc);
         setStatus('revealed');
-        setExpiryTime(doc.expiry);
+
+        // Delete immediately if no expiry (one-time secret)
+        if (!expiryMinutes && doc.$id) {
+          setTimeout(() => setStatus('expired'), 1000); // hide after 1 second
+          databases.deleteDocument(dbID, collectionID, doc.$id).catch(console.warn);
+        }
       } catch (err) {
         console.error(err);
         setStatus('error');
@@ -43,28 +45,28 @@ function ViewSecret() {
     };
 
     fetchSecret();
-  }, [token]);
+  }, [token, expiryMinutes]);
 
+  // Handle expiry timer if expiryMinutes exists
   useEffect(() => {
-    if (!expiryTime) return;
+    if (!expiryMinutes || !secret) return;
+
+    let remaining = parseInt(expiryMinutes) * 60000;
+    setTimeLeft(remaining);
 
     const interval = setInterval(() => {
-      const remaining = new Date(expiryTime).getTime() - Date.now();
-
+      remaining -= 1000;
       if (remaining <= 0) {
-        setTimeLeft(null);
-        setStatus('expired');
         clearInterval(interval);
-        if (secret?.$id) {
-          databases.deleteDocument(dbID, collectionID, secret.$id).catch(console.warn);
-        }
+        setTimeLeft(0);
+        setStatus('expired'); // hide secret
       } else {
         setTimeLeft(remaining);
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [expiryTime, secret]);
+  }, [expiryMinutes, secret]);
 
   const formatTime = (ms) => {
     const minutes = String(Math.floor(ms / 60000)).padStart(2, '0');
@@ -72,9 +74,12 @@ function ViewSecret() {
     return `${minutes}:${seconds}`;
   };
 
-  if (status === 'loading') return <div className="p-6 text-center text-gray-500">⏳ Loading your secret...</div>;
-  if (status === 'error') return <div className="p-6 text-center text-red-500">❌ Secret not found.</div>;
-  if (status === 'expired') return <div className="p-6 text-center text-yellow-500">⚠️ This secret has expired.</div>;
+  if (status === 'loading')
+    return <div className="p-6 text-center text-gray-500">⏳ Loading your secret...</div>;
+  if (status === 'error')
+    return <div className="p-6 text-center text-red-500">❌ Secret not found.</div>;
+  if (status === 'expired')
+    return <div className="p-6 text-center text-yellow-500">⚠️ This secret has expired.</div>;
 
   // Parse JSON from content
   const parsedContent = secret.content ? JSON.parse(secret.content) : {};
@@ -100,9 +105,10 @@ function ViewSecret() {
           />
         )}
 
-        {timeLeft && (
+        {timeLeft !== null && (
           <div className="text-center text-sm text-gray-600">
-            ⏳ This message will expire in <span className="font-semibold">{formatTime(timeLeft)}</span>
+            ⏳ This message will expire in{' '}
+            <span className="font-semibold">{formatTime(timeLeft)}</span>
           </div>
         )}
       </div>
@@ -111,3 +117,4 @@ function ViewSecret() {
 }
 
 export default ViewSecret;
+
