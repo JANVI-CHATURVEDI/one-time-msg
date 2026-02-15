@@ -11,14 +11,14 @@ function ViewSecret() {
   const [timeLeft, setTimeLeft] = useState(null); // how much time is left (countdown)
 
 
-  const dbID = '68733f8d002069e89292';
-  const collectionID = '68733fa3003a9fd9cdef';
+  const dbID = '699165e1000f47988d38';
+  const collectionID = 'messages';
 
   useEffect(() => {
     const fetchSecret = async () => {
       try {
         const res = await databases.listDocuments(dbID, collectionID, [
-          Query.equal("token", [token]) // it matches the token in appwrite  database
+          Query.equal("messageId", token) // it matches the token in appwrite  database
         ]);  // now res has all data stored in appwrite  which token matches the url token 
 
         if (res.documents.length === 0) {
@@ -89,7 +89,7 @@ function ViewSecret() {
 
         {secret.text && (
           <p className="text-base text-gray-800 whitespace-pre-wrap p-3 rounded bg-white/80 shadow-inner max-h-60 overflow-auto border">
-            {secret.text}
+            {secret.content}
           </p>
         )}
 
