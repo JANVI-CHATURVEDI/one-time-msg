@@ -44,6 +44,7 @@ function SecretForm() {
                     imageUrl,
                     isRead: false,
                     expiry: expiryTime, // appwrite stored expiry time in milliseconds
+                    timestamp: new Date().toISOString()
                 }
             );
 
