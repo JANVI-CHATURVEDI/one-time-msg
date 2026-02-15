@@ -19,36 +19,43 @@ function SecretForm() {
 
         try {
             const token = nanoid();
-            const expiryTime = expiry ? Date.now() + expiry * 60 * 1000 : null;   // Date.now() gives current time in milliseconds  and then we convert expiry time in minutes to milliseconds  , so expiryTime stores expiry time in milliseconds
-            let imageUrl = null;
+            const expiryMinutes = expiry ? parseInt(expiry) : null;
 
-            // 1. If image is uploaded, upload it to Appwrite Storage
+            let uploadedImageUrl = null;
+
+            // Upload image if present
             if (image) {
-                const file = await storage.createFile('699164f0003b00cdf52e', ID.unique(), image);
-
-                imageUrl = `https://cloud.appwrite.io/v1/storage/buckets/687343ce0011224acaf8/files/${file.$id}/view?project=${import.meta.env.VITE_APPWRITE_PROJECT_ID}`;
-
+                const file = await storage.createFile('YOUR_BUCKET_ID', ID.unique(), image);
+                uploadedImageUrl = `https://cloud.appwrite.io/v1/storage/buckets/YOUR_BUCKET_ID/files/${file.$id}/view?project=${import.meta.env.VITE_APPWRITE_PROJECT_ID}`;
             }
 
-            // 2. Create document in Appwrite
+            // Create document in Appwrite (only with existing table columns)
             await databases.createDocument(
-                '699165e1000f47988d38',
-                'messages',
-                ID.unique(),
+                '699165e1000f47988d38', // Database ID
+                'messages',             // Table ID
+                ID.unique(),            // Row ID
                 {
                     messageId: ID.unique(),
-                    content: text || null,
+                    content: text || (uploadedImageUrl ? '[Image]' : null), // placeholder if only image
                     senderId: 'anonymous',
                     receiverId: 'anyone',
-                    imageUrl,
                     isRead: false,
-                    expiry: expiryTime, // appwrite stored expiry time in milliseconds
                     timestamp: new Date().toISOString()
                 }
             );
 
-            setLink(`${window.location.origin}/view/${token}`);
+            // Build one-time link including image & expiry in frontend
+            let secretLink = `${window.location.origin}/view/${token}`;
+            if (uploadedImageUrl) {
+                secretLink += `?image=${encodeURIComponent(uploadedImageUrl)}`;
+            }
+            if (expiryMinutes) {
+                secretLink += `&expiry=${expiryMinutes}`;
+            }
 
+            setLink(secretLink);
+
+            // Reset form
             setText('');
             setImage(null);
             setExpiry('');
@@ -59,9 +66,6 @@ function SecretForm() {
         setLoading(false);
     };
 
-
-   
-
     return (
         <form
             onSubmit={handleSubmit}
@@ -70,11 +74,11 @@ function SecretForm() {
             <h2 className="text-xl font-bold">Share a One-Time Secret</h2>
 
             <textarea
-                placeholder="Enter your msg..."
+                placeholder="Enter your message..."
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 className="w-full border rounded p-2 text-black focus:outline-none focus:ring-0 focus:border-white/40"
-            ></textarea>
+            />
 
             <div>
                 <label className="block font-medium">OR Upload an Image</label>
@@ -104,7 +108,7 @@ function SecretForm() {
                 {loading ? 'Generating...' : 'Generate Link'}
             </button>
 
-            {link && (    // if link is there
+            {link && (
                 <div className="mt-4 bg-white/20 p-3 rounded flex items-center justify-between text-white backdrop-blur">
                     <a
                         href={link}
@@ -114,10 +118,9 @@ function SecretForm() {
                     >
                         {link}
                     </a>
-
                     <button
                         onClick={(e) => {
-                            e.preventDefault(); // 🛑 prevent default anchor behavior
+                            e.preventDefault();
                             navigator.clipboard.writeText(link);
                             setCopied(true);
                             setTimeout(() => setCopied(false), 2000);
@@ -128,10 +131,9 @@ function SecretForm() {
                     </button>
                 </div>
             )}
-
-
         </form>
     );
 }
 
 export default SecretForm;
+
