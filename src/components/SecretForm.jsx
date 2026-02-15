@@ -38,7 +38,7 @@ function SecretForm() {
                 {
                     messageId: ID.unique(),
                     token,
-                    text: text || null,
+                    content: text || null,
                     senderId: 'anonymous',
                     receiverId: 'anyone',
                     imageUrl,
