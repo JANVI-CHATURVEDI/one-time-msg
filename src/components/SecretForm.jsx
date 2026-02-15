@@ -26,7 +26,7 @@ function SecretForm() {
             // Upload image if present
             if (image) {
                 const file = await storage.createFile('699164f0003b00cdf52e', ID.unique(), image);
-                uploadedImageUrl = `https://cloud.appwrite.io/v1/storage/buckets/YOUR_BUCKET_ID/files/${file.$id}/view?project=${import.meta.env.VITE_APPWRITE_PROJECT_ID}`;
+                uploadedImageUrl = `https://cloud.appwrite.io/v1/storage/buckets/699164f0003b00cdf52e/files/${file.$id}/view?project=${import.meta.env.VITE_APPWRITE_PROJECT_ID}`;
             }
 
             // Create document in Appwrite (only with existing table columns)
@@ -35,7 +35,7 @@ function SecretForm() {
                 'messages',             // Table ID
                 ID.unique(),            // Row ID
                 {
-                    messageId: ID.unique(),
+                    messageId: token,
                     content: text || (uploadedImageUrl ? '[Image]' : null), // placeholder if only image
                     senderId: 'anonymous',
                     receiverId: 'anyone',
