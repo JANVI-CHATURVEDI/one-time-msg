@@ -32,8 +32,8 @@ function SecretForm() {
 
             // 2. Create document in Appwrite
             await databases.createDocument(
-                '699164f0003b00cdf52e',
-                '68733fa3003a9fd9cdef',
+                '699165e1000f47988d38',
+                'messages',
                 ID.unique(),
                 {
                     token,
