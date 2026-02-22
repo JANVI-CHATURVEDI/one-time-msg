@@ -1,24 +1,24 @@
-# 🕵️‍♀️ One-Time Secret
+# One-Time Secret
 
 **Send confidential messages that vanish forever.** Secure, fast, and modern. Once viewed, your secret disappears—no traces, no logs. Perfect for sharing sensitive info safely.  
 
-🚀 **Live Demo:** [one-time-msg.vercel.app](https://one-time-msg.vercel.app/)
+ **Live Demo:** [one-time-msg.vercel.app](https://one-time-msg.vercel.app/)
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
-- 🔐 **Self-Destructing Secrets:** Messages and images auto-delete after first view.  
-- ☁️ **Cloud-Powered:** Backend built on **Appwrite** (Database + Storage + Functions).  
-- ⚡ **Lightning-Fast UI:** React + Vite for smooth, responsive experience.  
-- 🎨 **Stylish & Modern:** Dark + Red premium theme with animated gradients.  
-- ⏱️ **Flexible Expiry:** Set secrets to expire in **seconds or minutes**, defaulting to 7s.  
-- 🛡️ **Safe & Private:** Client-side AES-256 encryption ensures zero-knowledge storage.  
-- 📁 **Supports Media:** Upload images with messages—auto-deletes with the message.  
+-  **Self-Destructing Secrets:** Messages and images auto-delete after first view.  
+-  **Cloud-Powered:** Backend built on **Appwrite** (Database + Storage + Functions).  
+-  **Lightning-Fast UI:** React + Vite for smooth, responsive experience.  
+-  **Stylish & Modern:** Dark + Red premium theme with animated gradients.  
+-  **Flexible Expiry:** Set secrets to expire in **seconds or minutes**, defaulting to 7s.  
+-  **Safe & Private:** Client-side AES-256 encryption ensures zero-knowledge storage.  
+-  **Supports Media:** Upload images with messages—auto-deletes with the message.  
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 - **Frontend:** React, Vite, Tailwind CSS, Framer Motion, Lucide Icons  
 - **Backend:** Appwrite (Database + Storage + Serverless Functions)  
@@ -26,7 +26,7 @@
 
 ---
 
-## 💡 Why It’s Cool
+##  Why It’s Cool
 
 - **Non-Custodial:** We never store unencrypted data—your secrets stay yours.  
 - **One-Time Links:** Perfect for private sharing via email, chat, or social links.  
@@ -35,14 +35,14 @@
 
 ---
 
-## 🏗️ Project Screenshots
+##  Project Screenshots
 
 <img width="1882" height="904" alt="Screenshot (218)" src="https://github.com/user-attachments/assets/c8b2bcda-3cb6-49b5-89a1-071c5c99d8c4" />
 
 
 ---
 
-## ⚡ Getting Started
+##  Getting Started
 
 ```bash
 # Clone the repo
