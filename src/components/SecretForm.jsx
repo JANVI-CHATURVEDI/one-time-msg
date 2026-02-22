@@ -1,144 +1,151 @@
 import React, { useState } from 'react';
 import { databases, storage, ID } from '../appwrite/config';
-import { nanoid } from 'nanoid'; // install this package
-import { useNavigate } from 'react-router-dom';
+import { nanoid } from 'nanoid';
+import CryptoJS from 'crypto-js';
 
 function SecretForm() {
-    const [text, setText] = useState('');
-    const [image, setImage] = useState(null);
-    const [expiry, setExpiry] = useState(''); // minutes
-    const [loading, setLoading] = useState(false);
-    const [link, setLink] = useState('');
-    const [copied, setCopied] = useState(false);
+  const [text, setText] = useState('');
+  const [image, setImage] = useState(null);
+  const [expiry, setExpiry] = useState(''); // minutes
+  const [loading, setLoading] = useState(false);
+  const [link, setLink] = useState('');
+  const [copied, setCopied] = useState(false);
 
-    const navigate = useNavigate();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+    try {
+      const token = nanoid();
+      const expirySeconds = expiry ? parseInt(expiry) : 7;
 
-        try {
-            const token = nanoid();
-            const expiryMinutes = expiry ? parseInt(expiry) : null;
+      // Generate random key for encryption
+      const encryptionKey = nanoid(32);
 
-            let uploadedImageUrl = null;
+      // Encrypt text
+      let encryptedText = null;
+      if (text) {
+        encryptedText = CryptoJS.AES.encrypt(text, encryptionKey).toString();
+      }
 
-            // Upload image if present
-            if (image) {
-                const file = await storage.createFile('699164f0003b00cdf52e', ID.unique(), image);
-                uploadedImageUrl = `https://cloud.appwrite.io/v1/storage/buckets/699164f0003b00cdf52e/files/${file.$id}/view?project=${import.meta.env.VITE_APPWRITE_PROJECT_ID}`;
-            }
+      // Upload image if exists
+      let uploadedImageUrl = null;
+      if (image) {
+        const file = await storage.createFile(
+          '699164f0003b00cdf52e',
+          ID.unique(),
+          image
+        );
+        uploadedImageUrl = `https://cloud.appwrite.io/v1/storage/buckets/699164f0003b00cdf52e/files/${file.$id}/view?project=${import.meta.env.VITE_APPWRITE_PROJECT_ID}`;
+      }
 
-            // Create document in Appwrite (only with existing table columns)
-           const dataToStore = JSON.stringify({
-                        text: text || null,
-                        image: uploadedImageUrl || null
-           });
+      // Store encrypted message
+      const dataToStore = JSON.stringify({
+        text: encryptedText,
+        image: uploadedImageUrl || null,
+      });
 
-           await databases.createDocument(
-                  '699165e1000f47988d38', // your DB ID
-                  'messages',             // your collection ID
-                  ID.unique(),            // document ID
-                  {
-                     messageId: token,
-                     content: dataToStore,  // store both text & image as JSON
-                     senderId: 'anonymous',
-                     receiverId: 'anyone',
-                     isRead: false,
-                     timestamp: new Date().toISOString()
-                   }
-            );
-
-            // Build one-time link including image & expiry in frontend
-            let secretLink = `${window.location.origin}/view/${token}`;
-            if (uploadedImageUrl) {
-                secretLink += `?image=${encodeURIComponent(uploadedImageUrl)}`;
-            }
-            if (expiryMinutes) {
-                secretLink += `&expiry=${expiryMinutes}`;
-            }
-
-            setLink(secretLink);
-
-            // Reset form
-            setText('');
-            setImage(null);
-            setExpiry('');
-        } catch (err) {
-            alert("Error saving secret: " + err.message);
+      await databases.createDocument(
+        '699165e1000f47988d38',
+        'messages',
+        ID.unique(),
+        {
+          messageId: token,
+          content: dataToStore,
+          senderId: 'anonymous',
+          receiverId: 'anyone',
+          isRead: false,
+          timestamp: new Date().toISOString(),
         }
+      );
 
-        setLoading(false);
-    };
+      // Build link
+      let secretLink = `${window.location.origin}/view/${token}?key=${encryptionKey}`;
+      if (uploadedImageUrl) secretLink += `&image=${encodeURIComponent(uploadedImageUrl)}`;
+      if (expirySeconds) secretLink += `&expiry=${expirySeconds}`;
 
-    return (
-        <form
-            onSubmit={handleSubmit}
-            className="space-y-4 p-6 max-w-lg mx-auto rounded-xl shadow-xl bg-white/10 backdrop-blur-md border border-white/20 text-white"
-        >
-            <h2 className="text-xl font-bold">Share a One-Time Secret</h2>
+      setLink(secretLink);
 
-            <textarea
-                placeholder="Enter your message..."
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                className="w-full border rounded p-2 text-black focus:outline-none focus:ring-0 focus:border-white/40"
-            />
+      setText('');
+      setImage(null);
+      setExpiry('');
+    } catch (err) {
+      alert('Error saving secret: ' + err.message);
+    }
 
-            <div>
-                <label className="block font-medium">OR Upload an Image</label>
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImage(e.target.files[0])}
-                    className="block mt-1 text-gray-300"
-                />
-            </div>
+    setLoading(false);
+  };
 
-            <div>
-                <label className="block font-medium">Set Expiry (in minutes)</label>
-                <input
-                    type="number"
-                    value={expiry}
-                    onChange={(e) => setExpiry(e.target.value)}
-                    className="border rounded p-2 w-full text-black focus:outline-none focus:ring-0 focus:border-white/40"
-                />
-            </div>
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-5 p-6 rounded-2xl shadow-2xl bg-black/40 backdrop-blur-xl border border-red-600/40 text-white"
+    >
+      <h2 className="text-2xl font-bold text-center text-red-400 drop-shadow-lg">
+        🔐 Share a One-Time Secret
+      </h2>
 
-            <button
-                type="submit"
-                disabled={loading}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-                {loading ? 'Generating...' : 'Generate Link'}
-            </button>
+      <textarea
+        placeholder="Enter your message..."
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="w-full p-3 rounded-lg bg-black/60 border border-red-600/50 text-white placeholder-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+        rows={4}
+      />
 
-            {link && (
-                <div className="mt-4 bg-white/20 p-3 rounded flex items-center justify-between text-white backdrop-blur">
-                    <a
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="break-all underline"
-                    >
-                        {link}
-                    </a>
-                    <button
-                        onClick={(e) => {
-                            e.preventDefault();
-                            navigator.clipboard.writeText(link);
-                            setCopied(true);
-                            setTimeout(() => setCopied(false), 2000);
-                        }}
-                        className="ml-2 px-3 py-1 w-20 text-center bg-white/20 text-white rounded hover:bg-white/30 transition-all"
-                    >
-                        {copied ? 'Copied!' : 'Copy'}
-                    </button>
-                </div>
-            )}
-        </form>
-    );
+      <div>
+        <label className="block font-medium text-red-400 mb-1">OR Upload an Image</label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setImage(e.target.files[0])}
+          className="block w-full text-red-300 file:bg-red-700 file:text-white file:px-4 file:py-2 file:rounded hover:file:bg-red-600"
+        />
+      </div>
+
+      <div>
+        <label className="block font-medium text-red-400 mb-1">Set Expiry (seconds)</label>
+        <input
+          type="number"
+          value={expiry}
+          onChange={(e) => setExpiry(e.target.value)}
+          className="w-full p-2 rounded-lg bg-black/60 border border-red-600/50 text-white placeholder-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full py-2 rounded-lg bg-red-600 hover:bg-red-700 shadow-lg shadow-red-900/50 text-white font-semibold transition-all disabled:opacity-50"
+      >
+        {loading ? 'Generating...' : 'Generate Link'}
+      </button>
+
+      {link && (
+        <div className="mt-4 p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between bg-black/50 border border-red-600/50 text-red-200 backdrop-blur-md">
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="break-all underline mb-2 sm:mb-0"
+          >
+            {link}
+          </a>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              navigator.clipboard.writeText(link);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="px-3 py-1 w-full sm:w-auto text-center bg-red-700/40 hover:bg-red-700 rounded transition-all"
+          >
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+      )}
+    </form>
+  );
 }
 
 export default SecretForm;
-
